@@ -85,8 +85,13 @@ UPDATE "User" SET "isActive" = true WHERE email = 'user_email@gmail.com';
 3. Import your GitHub repository.
 4. In **Environment Variables**, add:
    - `DATABASE_URL` (From Neon)
-   - `NEXTAUTH_URL` (`https://your-app-name.vercel.app`)
+   - `NEXTAUTH_URL` (`https://your-app-name.vercel.app`, including `https://`)
    - `NEXTAUTH_SECRET`
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
 5. Click **Deploy**.
+
+`NEXTAUTH_URL` is required during the production build because NextAuth parses it
+while importing the client session provider. An empty value causes `TypeError:
+Invalid URL` at `src/components/Providers.tsx`. In Vercel, set it for the
+Production environment and redeploy after saving the variables.
