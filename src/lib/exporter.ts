@@ -2,12 +2,29 @@ import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import { CalculationResult } from './calculator'
+import { AlignCenter } from 'lucide-react'
 
-export interface InvoiceDetails {
+export interface ReceiptDetails {
   issueDate: string
   payerName: string
   payerIdCardNumber: string
   sellerName: string
+}
+
+async function loadLogoDataUrl() {
+  const response = await fetch('/rt-phone-house-logo.svg')
+  if (!response.ok) throw new Error('Unable to load seller logo')
+
+  const svg = await response.text()
+  const image = new Image()
+  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+  await image.decode()
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 220
+  canvas.height = 220
+  canvas.getContext('2d')?.drawImage(image, 0, 0)
+  return canvas.toDataURL('image/png')
 }
 
 export function exportToExcel(
@@ -168,8 +185,12 @@ export function exportInternalAccountingToPDF(
     ],
     body: internalTableData,
     theme: 'grid',
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [47, 85, 151] },
+    styles: { fontSize: 8, halign: 'center', valign: 'middle' },
+    headStyles: {
+      fillColor: [47, 85, 151],
+      halign: 'center',
+      valign: 'middle',
+    },
     didParseCell: (data: {
       section: string
       row: { index: number }
@@ -187,39 +208,62 @@ export function exportInternalAccountingToPDF(
   internalDoc.save(`${filePrefix}_Internal_Accounting.pdf`)
 }
 
-export function exportCustomerInvoiceToPDF(
+export async function exportCustomerInvoiceToPDF(
   calc: CalculationResult,
   itemCategory: string,
   itemDescription: string,
-  invoiceDetails: InvoiceDetails
+  receiptDetails: ReceiptDetails
 ) {
   const filePrefix = itemCategory.replaceAll(' ', '_')
   const customerDoc = new jsPDF({ orientation: 'portrait', format: 'a5' })
   const pageWidth = customerDoc.internal.pageSize.getWidth()
   const pageHeight = customerDoc.internal.pageSize.getHeight()
 
-  customerDoc.setFontSize(12)
-  customerDoc.text('CUSTOMER PAYMENT SCHEDULE / INVOICE', pageWidth / 2, 18, {
+  let logoDataUrl: string | undefined
+  try {
+    logoDataUrl = await loadLogoDataUrl()
+  } catch {
+    // Keep the receipt export usable if the public asset cannot be loaded.
+  }
+
+  if (logoDataUrl) {
+    customerDoc.addImage(logoDataUrl, 'PNG', (pageWidth - 22) / 2, 6, 22, 22)
+  }
+  customerDoc.setFont('helvetica', 'bold')
+  customerDoc.setFontSize(13)
+  customerDoc.setTextColor(120, 78, 18)
+  customerDoc.text('RT PHONE HOUSE', pageWidth / 2, 34, { align: 'center' })
+  customerDoc.setFont('helvetica', 'normal')
+  customerDoc.setFontSize(7)
+  customerDoc.setTextColor(70, 70, 70)
+  customerDoc.text(
+    `Address: Borey Piphup Thmey 1, St 15, Home No. 241, Chomkar Daung, Phnom Penh`,
+    pageWidth / 2,
+    40,
+    { align: 'center' }
+  )
+
+  customerDoc.setTextColor(0, 0, 0)
+  customerDoc.setFont('helvetica', 'bold')
+  customerDoc.setFontSize(10)
+  customerDoc.text('PAYMENT RECEIPT', pageWidth / 2, 50, {
     align: 'center',
   })
 
+  customerDoc.setFont('helvetica', 'normal')
   customerDoc.setFontSize(8)
-  customerDoc.text(
-    `Invoice Issue Date: ${invoiceDetails.issueDate || '-'}`,
-    14,
-    28
-  )
-  customerDoc.text(`Description: ${itemCategory} - ${itemDescription}`, 14, 35)
+  customerDoc.text(`Issue Date: ${receiptDetails.issueDate || '-'}`, 14, 59)
+  customerDoc.text(`Description: ${itemCategory} - ${itemDescription}`, 14, 66)
 
   customerDoc.setDrawColor(180, 180, 180)
-  customerDoc.line(14, 41, pageWidth - 14, 41)
-  customerDoc.text(`Full Price: $${calc.fullPrice.toFixed(2)}`, 14, 49)
-  customerDoc.text(`Total Months: ${calc.totalMonths}`, 80, 49)
-  customerDoc.text(`Down Payment: $${calc.downPayment.toFixed(2)}`, 14, 56)
+  customerDoc.line(14, 72, pageWidth - 14, 72)
+  customerDoc.text(`Full Price: $${calc.fullPrice.toFixed(2)}`, 14, 80)
+  customerDoc.text(`Total Months: ${calc.totalMonths}`, 80, 80)
+  customerDoc.text(`Down Payment: $${calc.downPayment.toFixed(2)}`, 14, 87)
   customerDoc.text(
     `Remain Payment: $${calc.financedPrincipal.toFixed(2)}`,
     80,
-    56
+    87
   )
 
   const customerTableData = calc.customerSchedule.map((row) => [
@@ -229,46 +273,76 @@ export function exportCustomerInvoiceToPDF(
     `$${row.totalMonthlyPayment.toFixed(2)}`,
   ])
 
+  const tableStartY = 90
+  const tableRowCount = customerTableData.length + 1
+  const footerBottomMargin = 8
+  const footerHeight = 45
+  const maximumFooterTop = pageHeight - footerHeight - footerBottomMargin
+  const availableTableHeight = maximumFooterTop - tableStartY - 2
+  const rowHeight = availableTableHeight / tableRowCount
+  const compactTable = tableRowCount > 12
+  const tableFontSize = compactTable ? 6.5 : 8
+  const tableCellPadding = compactTable ? 0.25 : 0.5
+
   ;(customerDoc as any).autoTable({
-    startY: 64,
+    startY: tableStartY,
     head: [
       ['Month', 'Payment Date', 'Starting Balance', 'Total Monthly Payment'],
     ],
     body: customerTableData,
     theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 1.5 },
-    headStyles: { fillColor: [47, 85, 151] },
+    pageBreak: 'avoid',
+    styles: {
+      fontSize: tableFontSize,
+      cellPadding: tableCellPadding,
+      minCellHeight: rowHeight,
+      halign: 'center',
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: [47, 85, 151],
+      fontSize: tableFontSize,
+      cellPadding: tableCellPadding,
+      minCellHeight: rowHeight,
+      halign: 'center',
+      valign: 'middle',
+    },
   })
 
   const tableEndY = (customerDoc as any).lastAutoTable.finalY
-  const footerTop = Math.min(tableEndY + 14, pageHeight - 58)
+  const footerTop = Math.min(maximumFooterTop, tableEndY + 4)
   const columnGap = 12
   const columnWidth = (pageWidth - 28 - columnGap) / 2
   const rightColumnX = 14 + columnWidth + columnGap
 
   customerDoc.setFontSize(8)
   customerDoc.setFont('helvetica', 'bold')
-  customerDoc.text('INSTALLMENT PAYER', 14, footerTop)
+  customerDoc.text('INSTALLMENT PAYER', 14, footerTop + 8)
   // customerDoc.text('SELLER', rightColumnX, footerTop)
   customerDoc.setFont('helvetica', 'normal')
   customerDoc.text(
-    `Name Payer: ${invoiceDetails.payerName || '-'}`,
+    `Name Payer: ${receiptDetails.payerName || '-'}`,
     14,
-    footerTop + 8
+    footerTop + 15
   )
   customerDoc.text(
-    `ID Number: ${invoiceDetails.payerIdCardNumber || '-'}`,
+    `ID/Passport: ${receiptDetails.payerIdCardNumber || '-'}`,
     rightColumnX,
-    footerTop + 8
+    footerTop + 15
   )
+  // customerDoc.text(
+  //   `Name: ${receiptDetails.sellerName || 'RT Phone House'}`,
+  //   rightColumnX,
+  //   footerTop + 16
+  // )
 
   customerDoc.setFont('helvetica', 'bold')
   customerDoc.setFontSize(7)
-  customerDoc.text("Installment payer's fingerprint", 14, footerTop + 15)
-  customerDoc.text("Seller's fingerprint", rightColumnX, footerTop + 15)
+  customerDoc.text("Installment payer's fingerprint", 14, footerTop + 23)
+  customerDoc.text("Seller's fingerprint", rightColumnX, footerTop + 23)
   customerDoc.setFont('helvetica', 'normal')
-  customerDoc.rect(14, footerTop + 19, columnWidth, 22)
-  customerDoc.rect(rightColumnX, footerTop + 19, columnWidth, 22)
+  customerDoc.rect(14, footerTop + 27, columnWidth, 18)
+  customerDoc.rect(rightColumnX, footerTop + 27, columnWidth, 18)
 
   customerDoc.save(`${filePrefix}_Customer_Receipt.pdf`)
 }
@@ -303,8 +377,17 @@ export function exportCustomerScheduleToPDF(
     ],
     body: customerTableData,
     theme: 'grid',
-    styles: { fontSize: 6.5, cellPadding: 1.5 },
-    headStyles: { fillColor: [47, 85, 151] },
+    styles: {
+      fontSize: 6.5,
+      cellPadding: 1.5,
+      halign: 'center',
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: [47, 85, 151],
+      halign: 'center',
+      valign: 'middle',
+    },
   })
 
   customerDoc.save(`${filePrefix}_Customer_Schedule.pdf`)

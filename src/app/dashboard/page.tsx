@@ -345,7 +345,7 @@ export default function DashboardPage() {
                     issueDate: invoiceIssueDate,
                     payerName,
                     payerIdCardNumber,
-                    sellerName: session?.user?.name || 'Store Admin',
+                    sellerName: 'RT Phone House',
                   }
                 )
               }

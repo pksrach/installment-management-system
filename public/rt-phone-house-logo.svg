@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220">
+  <defs>
+    <radialGradient id="gold" cx="35%" cy="25%" r="80%">
+      <stop offset="0" stop-color="#fff4b0"/>
+      <stop offset="0.45" stop-color="#d7a52f"/>
+      <stop offset="1" stop-color="#8b5b12"/>
+    </radialGradient>
+  </defs>
+  <circle cx="110" cy="110" r="104" fill="#f5f7fa" stroke="#9d6a18" stroke-width="5"/>
+  <circle cx="110" cy="110" r="94" fill="none" stroke="#d7a52f" stroke-width="3"/>
+  <rect x="70" y="34" width="80" height="112" rx="19" fill="none" stroke="url(#gold)" stroke-width="8"/>
+  <path d="M91 77c12-12 26-12 38 0M99 89c7-7 15-7 22 0M106 101c3-3 5-3 8 0" fill="none" stroke="#d7a52f" stroke-width="6" stroke-linecap="round"/>
+  <path d="M57 128c10-25 23-35 40-43 18-9 31-20 34-38 10 20 8 35-5 49-14 15-31 18-47 32-9 8-15 15-22 25z" fill="url(#gold)" stroke="#765016" stroke-width="2"/>
+  <text x="110" y="174" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#8b5b12">RT PHONE</text>
+  <text x="110" y="197" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#8b5b12">HOUSE</text>
+</svg>
