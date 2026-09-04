@@ -5,8 +5,9 @@ import { signOut, useSession } from 'next-auth/react'
 import { calculateInstallments, CalculationResult } from '@/lib/calculator'
 import {
   exportCustomerScheduleToPDF,
+  exportCustomerInvoiceToPDF,
+  exportInternalAccountingToPDF,
   exportToExcel,
-  exportToPDF,
 } from '@/lib/exporter'
 import {
   Smartphone,
@@ -322,12 +323,31 @@ export default function DashboardPage() {
 
             <button
               onClick={() =>
-                exportToPDF(calculation, activeCategory, itemDescription, {
-                  issueDate: invoiceIssueDate,
-                  payerName,
-                  payerIdCardNumber,
-                  sellerName: session?.user?.name || 'Store Admin',
-                })
+                exportInternalAccountingToPDF(
+                  calculation,
+                  activeCategory,
+                  itemDescription
+                )
+              }
+              className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-medium p-3 rounded-xl transition shadow-lg text-sm"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Export Internal Accounting PDF</span>
+            </button>
+
+            <button
+              onClick={() =>
+                exportCustomerInvoiceToPDF(
+                  calculation,
+                  activeCategory,
+                  itemDescription,
+                  {
+                    issueDate: invoiceIssueDate,
+                    payerName,
+                    payerIdCardNumber,
+                    sellerName: session?.user?.name || 'Store Admin',
+                  }
+                )
               }
               className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-medium p-3 rounded-xl transition shadow-lg text-sm"
             >

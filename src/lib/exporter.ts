@@ -96,11 +96,10 @@ export function exportToExcel(
   )
 }
 
-export function exportToPDF(
+export function exportInternalAccountingToPDF(
   calc: CalculationResult,
   itemCategory: string,
-  itemDescription: string,
-  invoiceDetails: InvoiceDetails
+  itemDescription: string
 ) {
   const filePrefix = itemCategory.replaceAll(' ', '_')
   const internalDoc = new jsPDF({ orientation: 'landscape' })
@@ -186,7 +185,15 @@ export function exportToPDF(
   })
 
   internalDoc.save(`${filePrefix}_Internal_Accounting.pdf`)
+}
 
+export function exportCustomerInvoiceToPDF(
+  calc: CalculationResult,
+  itemCategory: string,
+  itemDescription: string,
+  invoiceDetails: InvoiceDetails
+) {
+  const filePrefix = itemCategory.replaceAll(' ', '_')
   const customerDoc = new jsPDF({ orientation: 'portrait', format: 'a5' })
   const pageWidth = customerDoc.internal.pageSize.getWidth()
   const pageHeight = customerDoc.internal.pageSize.getHeight()
@@ -197,7 +204,11 @@ export function exportToPDF(
   })
 
   customerDoc.setFontSize(8)
-  customerDoc.text(`Invoice Issue Date: ${invoiceDetails.issueDate || '-'}`, 14, 28)
+  customerDoc.text(
+    `Invoice Issue Date: ${invoiceDetails.issueDate || '-'}`,
+    14,
+    28
+  )
   customerDoc.text(`Description: ${itemCategory} - ${itemDescription}`, 14, 35)
 
   customerDoc.setDrawColor(180, 180, 180)
@@ -238,27 +249,26 @@ export function exportToPDF(
   customerDoc.setFontSize(8)
   customerDoc.setFont('helvetica', 'bold')
   customerDoc.text('INSTALLMENT PAYER', 14, footerTop)
-  customerDoc.text('SELLER', rightColumnX, footerTop)
+  // customerDoc.text('SELLER', rightColumnX, footerTop)
   customerDoc.setFont('helvetica', 'normal')
-  customerDoc.text(`Name payer: ${invoiceDetails.payerName || '-'}`, 14, footerTop + 8)
   customerDoc.text(
-    `ID Card Number: ${invoiceDetails.payerIdCardNumber || '-'}`,
+    `Name Payer: ${invoiceDetails.payerName || '-'}`,
     14,
-    footerTop + 15
+    footerTop + 8
   )
-  // customerDoc.text(
-  //   `Seller: ${invoiceDetails.sellerName || '-'}`,
-  //   rightColumnX,
-  //   footerTop + 8
-  // )
+  customerDoc.text(
+    `ID Number: ${invoiceDetails.payerIdCardNumber || '-'}`,
+    rightColumnX,
+    footerTop + 8
+  )
 
   customerDoc.setFont('helvetica', 'bold')
   customerDoc.setFontSize(7)
-  customerDoc.text("Installment payer's fingerprint", 14, footerTop + 25)
-  customerDoc.text("Seller's fingerprint", rightColumnX, footerTop + 25)
+  customerDoc.text("Installment payer's fingerprint", 14, footerTop + 15)
+  customerDoc.text("Seller's fingerprint", rightColumnX, footerTop + 15)
   customerDoc.setFont('helvetica', 'normal')
-  customerDoc.rect(14, footerTop + 29, columnWidth, 22)
-  customerDoc.rect(rightColumnX, footerTop + 29, columnWidth, 22)
+  customerDoc.rect(14, footerTop + 19, columnWidth, 22)
+  customerDoc.rect(rightColumnX, footerTop + 19, columnWidth, 22)
 
   customerDoc.save(`${filePrefix}_Customer_Receipt.pdf`)
 }
