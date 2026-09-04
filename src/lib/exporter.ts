@@ -239,14 +239,17 @@ export async function exportCustomerInvoiceToPDF(
   customerDoc.text(
     `Address: Borey Piphup Thmey 1, St 15, Home No. 241, Chomkar Daung, Phnom Penh`,
     pageWidth / 2,
-    40,
+    39,
     { align: 'center' }
   )
+  customerDoc.text(`Phone Number: 069 30 6267`, pageWidth / 2, 43, {
+    align: 'center',
+  })
 
   customerDoc.setTextColor(0, 0, 0)
   customerDoc.setFont('helvetica', 'bold')
   customerDoc.setFontSize(10)
-  customerDoc.text('PAYMENT RECEIPT', pageWidth / 2, 50, {
+  customerDoc.text('PAYMENT RECEIPT', pageWidth / 2, 52, {
     align: 'center',
   })
 
@@ -321,12 +324,12 @@ export async function exportCustomerInvoiceToPDF(
   // customerDoc.text('SELLER', rightColumnX, footerTop)
   customerDoc.setFont('helvetica', 'normal')
   customerDoc.text(
-    `Name Payer: ${receiptDetails.payerName || '-'}`,
+    `Payer Name: ${receiptDetails.payerName || '-'}`,
     14,
     footerTop + 15
   )
   customerDoc.text(
-    `ID/Passport: ${receiptDetails.payerIdCardNumber || '-'}`,
+    `ID/Passport Number: ${receiptDetails.payerIdCardNumber || '-'}`,
     rightColumnX,
     footerTop + 15
   )
