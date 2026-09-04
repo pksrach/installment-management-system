@@ -249,7 +249,7 @@ export async function exportCustomerInvoiceToPDF(
   customerDoc.setTextColor(0, 0, 0)
   customerDoc.setFont('helvetica', 'bold')
   customerDoc.setFontSize(10)
-  customerDoc.text('PAYMENT RECEIPT', pageWidth / 2, 52, {
+  customerDoc.text('PAYMENT RECEIPT INSTALLMENT', pageWidth / 2, 52, {
     align: 'center',
   })
 
