@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import { signOut, useSession } from 'next-auth/react'
 import { calculateInstallments, CalculationResult } from '@/lib/calculator'
-import { exportToExcel, exportToPDF } from '@/lib/exporter'
+import {
+  exportCustomerScheduleToPDF,
+  exportToExcel,
+  exportToPDF,
+} from '@/lib/exporter'
 import {
   Smartphone,
   Laptop,
@@ -33,6 +37,11 @@ export default function DashboardPage() {
   const [totalMonths, setTotalMonths] = useState<number>(8)
   const [customMonthlyPayment, setCustomMonthlyPayment] = useState<string>('')
   const [paymentStartDate, setPaymentStartDate] = useState<string>('')
+  const [invoiceIssueDate, setInvoiceIssueDate] = useState<string>(
+    new Date().toISOString().slice(0, 10)
+  )
+  const [payerName, setPayerName] = useState<string>('')
+  const [payerIdCardNumber, setPayerIdCardNumber] = useState<string>('')
 
   const activeCategory =
     itemCategory === 'Other' ? customCategory || 'General Item' : itemCategory
@@ -190,6 +199,46 @@ export default function DashboardPage() {
             />
           </div>
 
+          {/* Invoice Details */}
+          <div className="space-y-3 border-t border-slate-700 pt-4">
+            <h3 className="text-sm font-bold text-white">Invoice Details</h3>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">
+                Invoice Issue Date
+              </label>
+              <input
+                type="date"
+                value={invoiceIssueDate}
+                onChange={(e) => setInvoiceIssueDate(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">
+                Payer Name
+              </label>
+              <input
+                type="text"
+                value={payerName}
+                onChange={(e) => setPayerName(e.target.value)}
+                placeholder="Enter payer's full name"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">
+                ID Card Number
+              </label>
+              <input
+                type="text"
+                value={payerIdCardNumber}
+                onChange={(e) => setPayerIdCardNumber(e.target.value)}
+                placeholder="Enter payer's ID card number"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
           {/* Interest Rate & Total Months */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -273,12 +322,31 @@ export default function DashboardPage() {
 
             <button
               onClick={() =>
-                exportToPDF(calculation, activeCategory, itemDescription)
+                exportToPDF(calculation, activeCategory, itemDescription, {
+                  issueDate: invoiceIssueDate,
+                  payerName,
+                  payerIdCardNumber,
+                  sellerName: session?.user?.name || 'Store Admin',
+                })
               }
               className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-medium p-3 rounded-xl transition shadow-lg text-sm"
             >
               <FileText className="w-4 h-4" />
               <span>Export Customer PDF Receipt</span>
+            </button>
+
+            <button
+              onClick={() =>
+                exportCustomerScheduleToPDF(
+                  calculation,
+                  activeCategory,
+                  itemDescription
+                )
+              }
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium p-3 rounded-xl transition shadow-lg text-sm"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Export Customer Schedule PDF</span>
             </button>
           </div>
         </div>

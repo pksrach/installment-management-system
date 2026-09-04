@@ -3,6 +3,13 @@ import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import { CalculationResult } from './calculator'
 
+export interface InvoiceDetails {
+  issueDate: string
+  payerName: string
+  payerIdCardNumber: string
+  sellerName: string
+}
+
 export function exportToExcel(
   calc: CalculationResult,
   itemCategory: string,
@@ -92,7 +99,8 @@ export function exportToExcel(
 export function exportToPDF(
   calc: CalculationResult,
   itemCategory: string,
-  itemDescription: string
+  itemDescription: string,
+  invoiceDetails: InvoiceDetails
 ) {
   const filePrefix = itemCategory.replaceAll(' ', '_')
   const internalDoc = new jsPDF({ orientation: 'landscape' })
@@ -179,11 +187,29 @@ export function exportToPDF(
 
   internalDoc.save(`${filePrefix}_Internal_Accounting.pdf`)
 
-  const customerDoc = new jsPDF({ orientation: 'landscape' })
-  customerDoc.setFontSize(16)
-  customerDoc.text('CUSTOMER PAYMENT SCHEDULE', 14, 18)
-  customerDoc.setFontSize(10)
-  customerDoc.text(`Item: ${itemCategory} - ${itemDescription}`, 14, 26)
+  const customerDoc = new jsPDF({ orientation: 'portrait', format: 'a5' })
+  const pageWidth = customerDoc.internal.pageSize.getWidth()
+  const pageHeight = customerDoc.internal.pageSize.getHeight()
+
+  customerDoc.setFontSize(12)
+  customerDoc.text('CUSTOMER PAYMENT SCHEDULE / INVOICE', pageWidth / 2, 18, {
+    align: 'center',
+  })
+
+  customerDoc.setFontSize(8)
+  customerDoc.text(`Invoice Issue Date: ${invoiceDetails.issueDate || '-'}`, 14, 28)
+  customerDoc.text(`Description: ${itemCategory} - ${itemDescription}`, 14, 35)
+
+  customerDoc.setDrawColor(180, 180, 180)
+  customerDoc.line(14, 41, pageWidth - 14, 41)
+  customerDoc.text(`Full Price: $${calc.fullPrice.toFixed(2)}`, 14, 49)
+  customerDoc.text(`Total Months: ${calc.totalMonths}`, 80, 49)
+  customerDoc.text(`Down Payment: $${calc.downPayment.toFixed(2)}`, 14, 56)
+  customerDoc.text(
+    `Remain Payment: $${calc.financedPrincipal.toFixed(2)}`,
+    80,
+    56
+  )
 
   const customerTableData = calc.customerSchedule.map((row) => [
     row.month,
@@ -193,14 +219,83 @@ export function exportToPDF(
   ])
 
   ;(customerDoc as any).autoTable({
-    startY: 34,
+    startY: 64,
     head: [
       ['Month', 'Payment Date', 'Starting Balance', 'Total Monthly Payment'],
     ],
     body: customerTableData,
     theme: 'grid',
+    styles: { fontSize: 6.5, cellPadding: 1.5 },
     headStyles: { fillColor: [47, 85, 151] },
   })
 
+  const tableEndY = (customerDoc as any).lastAutoTable.finalY
+  const footerTop = Math.min(tableEndY + 14, pageHeight - 58)
+  const columnGap = 12
+  const columnWidth = (pageWidth - 28 - columnGap) / 2
+  const rightColumnX = 14 + columnWidth + columnGap
+
+  customerDoc.setFontSize(8)
+  customerDoc.setFont('helvetica', 'bold')
+  customerDoc.text('INSTALLMENT PAYER', 14, footerTop)
+  customerDoc.text('SELLER', rightColumnX, footerTop)
+  customerDoc.setFont('helvetica', 'normal')
+  customerDoc.text(`Name payer: ${invoiceDetails.payerName || '-'}`, 14, footerTop + 8)
+  customerDoc.text(
+    `ID Card Number: ${invoiceDetails.payerIdCardNumber || '-'}`,
+    14,
+    footerTop + 15
+  )
+  // customerDoc.text(
+  //   `Seller: ${invoiceDetails.sellerName || '-'}`,
+  //   rightColumnX,
+  //   footerTop + 8
+  // )
+
+  customerDoc.setFont('helvetica', 'bold')
+  customerDoc.setFontSize(7)
+  customerDoc.text("Installment payer's fingerprint", 14, footerTop + 25)
+  customerDoc.text("Seller's fingerprint", rightColumnX, footerTop + 25)
+  customerDoc.setFont('helvetica', 'normal')
+  customerDoc.rect(14, footerTop + 29, columnWidth, 22)
+  customerDoc.rect(rightColumnX, footerTop + 29, columnWidth, 22)
+
   customerDoc.save(`${filePrefix}_Customer_Receipt.pdf`)
+}
+
+export function exportCustomerScheduleToPDF(
+  calc: CalculationResult,
+  itemCategory: string,
+  itemDescription: string
+) {
+  const filePrefix = itemCategory.replaceAll(' ', '_')
+  const customerDoc = new jsPDF({ orientation: 'portrait', format: 'a5' })
+  const pageWidth = customerDoc.internal.pageSize.getWidth()
+
+  customerDoc.setFontSize(13)
+  customerDoc.text('CUSTOMER PAYMENT SCHEDULE', pageWidth / 2, 18, {
+    align: 'center',
+  })
+  customerDoc.setFontSize(8)
+  customerDoc.text(`Description: ${itemCategory} - ${itemDescription}`, 14, 28)
+
+  const customerTableData = calc.customerSchedule.map((row) => [
+    row.month,
+    row.paymentDate,
+    `$${row.startingBalance.toFixed(2)}`,
+    `$${row.totalMonthlyPayment.toFixed(2)}`,
+  ])
+
+  ;(customerDoc as any).autoTable({
+    startY: 36,
+    head: [
+      ['Month', 'Payment Date', 'Starting Balance', 'Total Monthly Payment'],
+    ],
+    body: customerTableData,
+    theme: 'grid',
+    styles: { fontSize: 6.5, cellPadding: 1.5 },
+    headStyles: { fillColor: [47, 85, 151] },
+  })
+
+  customerDoc.save(`${filePrefix}_Customer_Schedule.pdf`)
 }
